@@ -1,71 +1,71 @@
 ﻿# Function to display a pop-up box
 function New-PopupMessage {
-# Return values for reference (https://msdn.microsoft.com/en-us/library/x83z1d9f(v=vs.84).aspx)
+    # Return values for reference (https://msdn.microsoft.com/en-us/library/x83z1d9f(v=vs.84).aspx)
 
-# Decimal value    Description  
-# -----------------------------
-# -1               The user did not click a button before nSecondsToWait seconds elapsed.
-# 1                OK button
-# 2                Cancel button
-# 3                Abort button
-# 4                Retry button
-# 5                Ignore button
-# 6                Yes button
-# 7                No button
-# 10               Try Again button
-# 11               Continue button
+    # Decimal value    Description
+    # -----------------------------
+    # -1               The user did not click a button before nSecondsToWait seconds elapsed.
+    # 1                OK button
+    # 2                Cancel button
+    # 3                Abort button
+    # 4                Retry button
+    # 5                Ignore button
+    # 6                Yes button
+    # 7                No button
+    # 10               Try Again button
+    # 11               Continue button
 
-# Define Parameters
-[CmdletBinding()]
-    [OutputType([int])]
-    Param
-    (
-        # The popup message
-        [Parameter(Mandatory=$true,Position=0)]
-        [string]$Message,
+    # Define Parameters
+    [CmdletBinding()]
+        [OutputType([int])]
+        Param
+        (
+            # The popup message
+            [Parameter(Mandatory=$true,Position=0)]
+            [string]$Message,
 
-        # The number of seconds to wait before closing the popup.  Default is 0, which leaves the popup open until a button is clicked.
-        [Parameter(Mandatory=$false,Position=1)]
-        [int]$SecondsToWait = 0,
+            # The number of seconds to wait before closing the popup.  Default is 0, which leaves the popup open until a button is clicked.
+            [Parameter(Mandatory=$false,Position=1)]
+            [int]$SecondsToWait = 0,
 
-        # The window title
-        [Parameter(Mandatory=$true,Position=2)]
-        [string]$Title,
+            # The window title
+            [Parameter(Mandatory=$true,Position=2)]
+            [string]$Title,
 
-        # The buttons to add
-        [Parameter(Mandatory=$true,Position=3)]
-        [ValidateSet('Ok','Ok-Cancel','Abort-Retry-Ignore','Yes-No-Cancel','Yes-No','Retry-Cancel','Cancel-TryAgain-Continue')]
-        [array]$ButtonType,
+            # The buttons to add
+            [Parameter(Mandatory=$true,Position=3)]
+            [ValidateSet('Ok','Ok-Cancel','Abort-Retry-Ignore','Yes-No-Cancel','Yes-No','Retry-Cancel','Cancel-TryAgain-Continue')]
+            [array]$ButtonType,
 
-        # The icon type
-        [Parameter(Mandatory=$true,Position=4)]
-        [ValidateSet('Stop','Question','Exclamation','Information')]
-        $IconType
-    )
+            # The icon type
+            [Parameter(Mandatory=$true,Position=4)]
+            [ValidateSet('Stop','Question','Exclamation','Information')]
+            $IconType
+        )
 
-# Convert button types
-switch($ButtonType)
-    {
-        "Ok" { $Button = 0 }
-        "Ok-Cancel" { $Button = 1 }
-        "Abort-Retry-Ignore" { $Button = 2 }
-        "Yes-No-Cancel" { $Button = 3 }
-        "Yes-No" { $Button = 4 }
-        "Retry-Cancel" { $Button = 5 }
-        "Cancel-TryAgain-Continue" { $Button = 6 }
-    }
+    # Convert button types
+    switch($ButtonType)
+        {
+            "Ok" { $Button = 0 }
+            "Ok-Cancel" { $Button = 1 }
+            "Abort-Retry-Ignore" { $Button = 2 }
+            "Yes-No-Cancel" { $Button = 3 }
+            "Yes-No" { $Button = 4 }
+            "Retry-Cancel" { $Button = 5 }
+            "Cancel-TryAgain-Continue" { $Button = 6 }
+        }
 
-# Convert Icon types
-Switch($IconType)
-    {
-        "Stop" { $Icon = 16 }
-        "Question" { $Icon = 32 }
-        "Exclamation" { $Icon = 48 }
-        "Information" { $Icon = 64 }
-    }
+    # Convert Icon types
+    Switch($IconType)
+        {
+            "Stop" { $Icon = 16 }
+            "Question" { $Icon = 32 }
+            "Exclamation" { $Icon = 48 }
+            "Information" { $Icon = 64 }
+        }
 
-# Create the popup
-(New-Object -ComObject Wscript.Shell).popup($Message,$SecondsToWait,$Title,$Button + $Icon)
+    # Create the popup
+    (New-Object -ComObject Wscript.Shell).popup($Message,$SecondsToWait,$Title,$Button + $Icon)
 }
 
 
@@ -83,7 +83,7 @@ Function Create-RegistryKeys
 
 
 # Function to update registry keys
-Function Update-Registry 
+Function Update-Registry
 {
     param($SQLServer, $Database, $UseLocalTimeZone)
 
@@ -94,7 +94,7 @@ Function Update-Registry
 
 
 # Function to read the registry keys
-Function Read-Registry 
+Function Read-Registry
 {
     $UI.SessionData[4] = Get-ItemProperty -Path $UI.SessionData[10] -Name SQLServer |  Select-Object -ExpandProperty SQLServer
     $UI.SessionData[5] = Get-ItemProperty -Path $UI.SessionData[10] -Name Database | Select-Object -ExpandProperty Database
@@ -110,7 +110,7 @@ Function Read-Registry
 
 # Function to load the PXE Service Points
 Function Get-PXEServicePoints {
-    
+
     # Define the source directory
     $Source = $UI.SessionData[15]
 
@@ -168,7 +168,7 @@ Function Get-PXEServicePoints {
 
 # Function to load the PXE boot data from SCCM
 Function Get-PXELog {
-    
+
     # Define the source directory
     $Source = $UI.SessionData[15]
 
@@ -220,12 +220,12 @@ Function Get-PXELog {
     when 6311 then 'The PXE Service Point instructed the device to boot to bootimage ' + smwis.InsString3 + ' based on deployment ' + smwis.InsString4 + '.'
     when 6314 then 'The PXE Service Point instructed the device to boot normally as it has no PXE deployment assigned.'
     end as 'Message'
-    from v_StatusMessage smsgs   
+    from v_StatusMessage smsgs
     join v_StatMsgWithInsStrings smwis on smsgs.RecordID = smwis.RecordID
     join v_StatMsgModuleNames modNames on smsgs.ModuleName = modNames.ModuleName
     left join v_BootImagePackage bip on smwis.InsString3 = bip.PackageID
     left join vClassicDeployments cd on smwis.InsString4 = cd.DeploymentId
-    where smsgs.MachineName like '%$DistributionPoint%' 
+    where smsgs.MachineName like '%$DistributionPoint%'
     and smsgs.MessageID in (6311,6314)
     and DATEDIFF(hour,smsgs.Time,(DATEADD(hour, $UTCOffset, GETDATE()))) <= '$TimeInHours'
     Order by smsgs.Time DESC
@@ -252,7 +252,7 @@ Function Get-PXELog {
     }
 
     ## Convert date/time format and timezone (if selected) to local ##
-    
+
     # Add a temporary column
     $SQLQuery.Result.Columns.Add("TimeTemp")
 
@@ -328,9 +328,9 @@ Function Get-AssociatedDevices {
     # If results are returned
     If ($SQLQuery.Result.Rows.Count -ge 1)
     {
-        
+
         ## Convert date/time format and adjust for timezone if selected ##
-    
+
         # Add a temporary column
         $SQLQuery.Result.Columns.Add("CreationDateTemp")
 
@@ -359,7 +359,7 @@ Function Get-AssociatedDevices {
 
         # Rename the new column
         $SQLQuery.Result.Columns['CreationDateTemp'].ColumnName = 'Record Creation Date'
-        
+
          # Add a temporary column
         $SQLQuery.Result.Columns.Add("ActiveTimeTemp")
 
@@ -392,16 +392,16 @@ Function Get-AssociatedDevices {
         # Remove the existing column
         $SQLQuery.Result.Columns.Remove('Last Active Time')
 
-        # Rename the new column 
+        # Rename the new column
         $SQLQuery.Result.Columns['ActiveTimeTemp'].ColumnName = 'Last Active Time'
-        
-        
-        
+
+
+
         # Add the results to the session data and UI
         $UI.SessionData[8] = $SQLQuery.Result.DefaultView
 
         # Create and load the associated records window
-        [XML]$Xaml2 = [System.IO.File]::ReadAllLines("$Source\XAML files\Devices.xaml") 
+        [XML]$Xaml2 = [System.IO.File]::ReadAllLines("$Source\XAML files\Devices.xaml")
         $UI.DevicesWindow = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml2))
         $UI.DevicesWindow.Icon = "$Source\bin\network.ico"
         $UI.DevicesWindow.DataContext = $UI.SessionData
@@ -418,10 +418,10 @@ Function Get-AssociatedDevices {
 
 
 # Function to display settings window
-Function Get-Settings {
+Function Show-Settings {
 
     # Create the Settings window
-    [XML]$Xaml3 = [System.IO.File]::ReadAllLines("$Source\XAML files\Settings.xaml") 
+    [XML]$Xaml3 = [System.IO.File]::ReadAllLines("$Source\XAML files\Settings.xaml")
     $UI.SettingsWindow = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml3))
     $xaml3.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | ForEach-Object -Process {
     $UI.$($_.Name) = $UI.SettingsWindow.FindName($_.Name)
@@ -478,7 +478,7 @@ Function Get-Settings {
 Function Display-About {
 
     # Create the Display window
-    [XML]$Xaml4 = [System.IO.File]::ReadAllLines("$Source\XAML files\About.xaml") 
+    [XML]$Xaml4 = [System.IO.File]::ReadAllLines("$Source\XAML files\About.xaml")
     $UI.AboutWindow = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml4))
     $xaml4.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | ForEach-Object -Process {
         $UI.$($_.Name) = $UI.AboutWindow.FindName($_.Name)
@@ -503,7 +503,7 @@ Function Display-About {
 Function Display-Help {
 
     # Create the Help window
-    [XML]$Xaml5 = [System.IO.File]::ReadAllLines("$Source\XAML files\Help.xaml") 
+    [XML]$Xaml5 = [System.IO.File]::ReadAllLines("$Source\XAML files\Help.xaml")
     $UI.HelpWindow = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml5))
     $xaml5.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | ForEach-Object -Process {
         $UI.$($_.Name) = $UI.HelpWindow.FindName($_.Name)
@@ -571,12 +571,12 @@ Function Check-CurrentVersion {
 
     # Add a row for each version
     $XMLDocument.PXE_Boot_Log.Versions.Version | sort Value -Descending | foreach {
-    
+
         # The changes are put into an array, then converted to a string with each change on a new line for correct display
         [array]$Changes = $_.Changes.Change
         $ofs = "`r`n"
         $Table.Rows.Add($_.Value, $_.ReleaseDate, [string]$Changes)
-    
+
     }
 
     # Set the source of the datagrid
@@ -601,24 +601,24 @@ Function Check-CurrentVersion {
 
 
 # Function to display a notification tip
-function Show-BalloonTip  
+function Show-BalloonTip
 {
- 
+
   [CmdletBinding(SupportsShouldProcess = $true)]
   param
   (
     [Parameter(Mandatory=$true)]
     $Text,
-   
+
     [Parameter(Mandatory=$true)]
     $Title,
-   
+
     [ValidateSet('None', 'Info', 'Warning', 'Error')]
     $Icon = 'Info',
     $Timeout = 30000,
     $UI
   )
- 
+
   Add-Type -AssemblyName System.Windows.Forms
 
   $Form = New-Object System.Windows.Forms.Form
@@ -653,4 +653,4 @@ function Show-BalloonTip
   #$App = [System.Windows.Application]::new()
   #$app.Run($Form)
 
-} 
+}
