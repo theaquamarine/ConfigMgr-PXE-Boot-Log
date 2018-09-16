@@ -475,7 +475,7 @@ Function Show-Settings {
 
 
 # Function to display "About" window
-Function Display-About {
+Function Show-About {
 
     # Create the Display window
     [XML]$Xaml4 = [System.IO.File]::ReadAllLines("$Source\XAML files\About.xaml")
@@ -500,7 +500,7 @@ Function Display-About {
 
 
 # Function to display "Help" window
-Function Display-Help {
+Function Show-Help {
 
     # Create the Help window
     [XML]$Xaml5 = [System.IO.File]::ReadAllLines("$Source\XAML files\Help.xaml")

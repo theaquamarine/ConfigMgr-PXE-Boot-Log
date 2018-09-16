@@ -96,7 +96,7 @@ $UI.Btn_Settings.Add_Click({
 $UI.Btn_About.Add_Click({
 
     # Show the About window
-    Display-About
+    Show-About
 
 })
 
@@ -104,7 +104,7 @@ $UI.Btn_About.Add_Click({
 $UI.Btn_Help.Add_Click({
 
     # Show the Help window
-    Display-Help
+    Show-Help
 
 })
 
