@@ -418,7 +418,7 @@ Function Get-AssociatedDevices {
 
 
 # Function to display settings window
-Function Show-Settings {
+Function Show-SettingsWindow {
 
     # Create the Settings window
     [XML]$Xaml3 = [System.IO.File]::ReadAllLines("$Source\XAML files\Settings.xaml")
@@ -475,7 +475,7 @@ Function Show-Settings {
 
 
 # Function to display "About" window
-Function Show-About {
+Function Show-AboutWindow {
 
     # Create the Display window
     [XML]$Xaml4 = [System.IO.File]::ReadAllLines("$Source\XAML files\About.xaml")
@@ -500,7 +500,7 @@ Function Show-About {
 
 
 # Function to display "Help" window
-Function Show-Help {
+Function Show-HelpWindow {
 
     # Create the Help window
     [XML]$Xaml5 = [System.IO.File]::ReadAllLines("$Source\XAML files\Help.xaml")

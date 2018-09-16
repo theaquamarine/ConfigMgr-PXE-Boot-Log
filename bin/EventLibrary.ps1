@@ -88,7 +88,7 @@ $UI.Btn_Exit.Add_Click({
 $UI.Btn_Settings.Add_Click({
 
     # Show the Settings window
-    Show-Settings
+    Show-SettingsWindow
 
 })
 
@@ -96,7 +96,7 @@ $UI.Btn_Settings.Add_Click({
 $UI.Btn_About.Add_Click({
 
     # Show the About window
-    Show-About
+    Show-AboutWindow
 
 })
 
@@ -104,7 +104,7 @@ $UI.Btn_About.Add_Click({
 $UI.Btn_Help.Add_Click({
 
     # Show the Help window
-    Show-Help
+    Show-HelpWindow
 
 })
 
