@@ -20,50 +20,50 @@ If ($PSVersionTable.PSVersion.Major -lt 5)
 }
 
 # File hash checks
-$XAMLFiles = @(
-    "About.xaml"
-    "App.xaml"
-    "Devices.xaml"
-    "Help.xaml"
-    "HelpFlowDocument.xaml"
-    "Settings.xaml"
-)
+# $XAMLFiles = @(
+#     "About.xaml"
+#     "App.xaml"
+#     "Devices.xaml"
+#     "Help.xaml"
+#     "HelpFlowDocument.xaml"
+#     "Settings.xaml"
+# )
 
-$PSFiles = @(
-    "ClassLibrary.ps1"
-    "EventLibrary.ps1"
-    "FunctionLibrary.ps1"
-)
+# $PSFiles = @(
+#     "ClassLibrary.ps1"
+#     "EventLibrary.ps1"
+#     "FunctionLibrary.ps1"
+# )
 
-$Hashes = @{
-    "ClassLibrary.ps1" = '1F9C550027197CD5C3DFF2D2C2244BB0B0A31F40B8133164A41AC897754493A9'
-    "EventLibrary.ps1" = '23CF1E3CA32A23948DA296D7ED0EC00BAB280A4791933C9C461F96345233B963'
-    "FunctionLibrary.ps1" = '5E4A9A5B82DEDB48AAA8ACA5F96724654737251894B014AB33A55BF5E8BD06C1'
-    "About.xaml" = '80553FB09E1E6B71D803D633A147FEFDF2F0390EB4DF7ABBC7459E2852B8392E'
-    "App.xaml" = '3188DF98290A04FCDF0377BA41361B0884AF786EA0E90D8A48283192DABDF681'
-    "Devices.xaml" = '2A01661C76FF449B1A547A7A4F0CEB95FFE60862042107BAAE468CA9B1CD258E'
-    "Help.xaml" = 'E52DC0F561D41A74522EBDC7660A77A89606E324BCE74769F27492EAD7797812'
-    "HelpFlowDocument.xaml" = 'D220A6BBAE5220168E3BB2EBB4781A76EC5F5D670C3CE4C3A36D928EF4A11F78'
-    "Settings.xaml" = 'AFE6F729AE3E237C207759E117861038CFDD8EE4733C54F05506E9EC0DFD37F8'
-}
+# $Hashes = @{
+#     "ClassLibrary.ps1" = '1F9C550027197CD5C3DFF2D2C2244BB0B0A31F40B8133164A41AC897754493A9'
+#     "EventLibrary.ps1" = '23CF1E3CA32A23948DA296D7ED0EC00BAB280A4791933C9C461F96345233B963'
+#     "FunctionLibrary.ps1" = '5E4A9A5B82DEDB48AAA8ACA5F96724654737251894B014AB33A55BF5E8BD06C1'
+#     "About.xaml" = '80553FB09E1E6B71D803D633A147FEFDF2F0390EB4DF7ABBC7459E2852B8392E'
+#     "App.xaml" = '3188DF98290A04FCDF0377BA41361B0884AF786EA0E90D8A48283192DABDF681'
+#     "Devices.xaml" = '2A01661C76FF449B1A547A7A4F0CEB95FFE60862042107BAAE468CA9B1CD258E'
+#     "Help.xaml" = 'E52DC0F561D41A74522EBDC7660A77A89606E324BCE74769F27492EAD7797812'
+#     "HelpFlowDocument.xaml" = 'D220A6BBAE5220168E3BB2EBB4781A76EC5F5D670C3CE4C3A36D928EF4A11F78'
+#     "Settings.xaml" = 'AFE6F729AE3E237C207759E117861038CFDD8EE4733C54F05506E9EC0DFD37F8'
+# }
 
-$XAMLFiles | foreach {
+# $XAMLFiles | foreach {
 
-    If ((Get-FileHash -Path "$Source\XAML Files\$_").Hash -ne $Hashes.$_)
-    {
-        New-PopupMessage -Message "One or more installation files failed a hash check. As a security measure, the installation files cannot be altered to prevent running unauthorized code. Please revert the changes or reinstall the application." -Title "ConfigMgr PXE Boot Log" -ButtonType Ok -IconType Stop
-        Break
-    }
-}
+#     If ((Get-FileHash -Path "$Source\XAML Files\$_").Hash -ne $Hashes.$_)
+#     {
+#         New-PopupMessage -Message "One or more installation files failed a hash check. As a security measure, the installation files cannot be altered to prevent running unauthorized code. Please revert the changes or reinstall the application." -Title "ConfigMgr PXE Boot Log" -ButtonType Ok -IconType Stop
+#         Break
+#     }
+# }
 
-$PSFiles | foreach {
+# $PSFiles | foreach {
 
-    If ((Get-FileHash -Path "$Source\bin\$_").Hash -ne $Hashes.$_)
-    {
-        New-PopupMessage -Message "One or more installation files failed a hash check. As a security measure, the installation files cannot be altered to prevent running unauthorized code. Please revert the changes or reinstall the application." -Title "ConfigMgr PXE Boot Log" -ButtonType Ok -IconType Stop
-        Break
-    }
-}
+#     If ((Get-FileHash -Path "$Source\bin\$_").Hash -ne $Hashes.$_)
+#     {
+#         New-PopupMessage -Message "One or more installation files failed a hash check. As a security measure, the installation files cannot be altered to prevent running unauthorized code. Please revert the changes or reinstall the application." -Title "ConfigMgr PXE Boot Log" -ButtonType Ok -IconType Stop
+#         Break
+#     }
+# }
 
 # Define the XAML code for the main window
 [XML]$Xaml = [System.IO.File]::ReadAllLines("$Source\XAML files\App.xaml")
