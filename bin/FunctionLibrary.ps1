@@ -181,15 +181,59 @@ Function Get-PXEPointsAndOffset {
     $UI.SessionData[11] = "True"
 }
 
+Function Get-PXEStatusMessages {
+    Param (
+        $TimeInHours = 1,
+        $DistributionPoint = '',
+        $UTCOffSet = 0,
+        [parameter(Mandatory=$true)]$SqlConnection
+    )
+
+    $Query = "
+        select smsgs.Time,
+        --DATEDIFF(hour,smsgs.Time,(DATEADD(hour, $UTCOffset, GETDATE()))) as 'TimeInHours',
+        --$UTCOffset as 'Offset',
+        smsgs.MachineName as 'PXE Service Point',
+        case smsgs.MessageID
+        when 6311 then 'PXE boot'
+        when 6314 then 'Normal boot'
+        end as 'Boot Type',
+        smwis.InsString1 as 'MAC Address',
+        smwis.InsString2 as 'SMBIOS GUID',
+        bip.Name as 'Boot Image Name',
+        --smwis.InsString3 as 'Boot Image ID',
+        cd.CollectionName as 'Targeted Collection',
+        --smwis.InsString4 as 'Deployment ID',
+        case smsgs.MessageID
+        when 6311 then 'The PXE Service Point instructed the device to boot to bootimage ' + smwis.InsString3 + ' based on deployment ' + smwis.InsString4 + '.'
+        when 6314 then 'The PXE Service Point instructed the device to boot normally as it has no PXE deployment assigned.'
+        end as 'Message'
+        from v_StatusMessage smsgs
+        join v_StatMsgWithInsStrings smwis on smsgs.RecordID = smwis.RecordID
+        join v_StatMsgModuleNames modNames on smsgs.ModuleName = modNames.ModuleName
+        left join v_BootImagePackage bip on smwis.InsString3 = bip.PackageID
+        left join vClassicDeployments cd on smwis.InsString4 = cd.DeploymentId
+        where smsgs.MachineName like '%$DistributionPoint%'
+        and smsgs.MessageID in (6311,6314)
+        and DATEDIFF(hour,smsgs.Time,(DATEADD(hour, $UTCOffset, GETDATE()))) <= '$TimeInHours'
+        Order by smsgs.Time DESC
+        "
+
+    $sqlCommand = [System.Data.SqlClient.SqlCommand]::new($query, $SqlConnection)
+
+    try {
+        $SqlConnection.open();
+        $result = [System.Data.DataTable]::new()
+        $result.load($sqlCommand.ExecuteReader())
+        $result
+    } catch {New-PopupMessage -Message "$Error" -Title "SQL Query" -ButtonType Ok -IconType Stop
+    } finally {$SqlConnection.close()}
+}
+# Get-PXEStatusMessages
+
 
 # Function to load the PXE boot data from SCCM
 Function Get-PXELog {
-
-    # Define the source directory
-    $Source = $UI.SessionData[15]
-
-    # Load in the class library
-    . "$Source\bin\ClassLibrary.ps1"
 
     # Set values including SQL server, database etc
     $SQLServer = $UI.SessionData[4]
@@ -198,6 +242,11 @@ Function Get-PXELog {
     $TimePeriod = $UI.SessionData[7]
     $UTCOffset = $UI.SessionData[16]
     $ConvertTimezone = $UI.SessionData[17]
+
+    $connectionString = "Server=$SQLServer;Database=$Database;Integrated Security=SSPI;Connection Timeout=5"
+
+    $SqlConnection = [System.Data.SqlClient.SqlConnection]::new($connectionString)
+
 
     # Convert from FQDN to friendly name only (required for SQL query)
     If ($DistributionPoint -match '.')
@@ -216,43 +265,10 @@ Function Get-PXELog {
         "Last 4 weeks" {$TimeInHours = 672}
     }
 
-    # Define the SQL query to run
-    $Query = "
-    select smsgs.Time,
-    --DATEDIFF(hour,smsgs.Time,(DATEADD(hour, $UTCOffset, GETDATE()))) as 'TimeInHours',
-    --$UTCOffset as 'Offset',
-    smsgs.MachineName as 'PXE Service Point',
-    case smsgs.MessageID
-    when 6311 then 'PXE boot'
-    when 6314 then 'Normal boot'
-    end as 'Boot Type',
-    smwis.InsString1 as 'MAC Address',
-    smwis.InsString2 as 'SMBIOS GUID',
-    bip.Name as 'Boot Image Name',
-    --smwis.InsString3 as 'Boot Image ID',
-    cd.CollectionName as 'Targeted Collection',
-    --smwis.InsString4 as 'Deployment ID',
-    case smsgs.MessageID
-    when 6311 then 'The PXE Service Point instructed the device to boot to bootimage ' + smwis.InsString3 + ' based on deployment ' + smwis.InsString4 + '.'
-    when 6314 then 'The PXE Service Point instructed the device to boot normally as it has no PXE deployment assigned.'
-    end as 'Message'
-    from v_StatusMessage smsgs
-    join v_StatMsgWithInsStrings smwis on smsgs.RecordID = smwis.RecordID
-    join v_StatMsgModuleNames modNames on smsgs.ModuleName = modNames.ModuleName
-    left join v_BootImagePackage bip on smwis.InsString3 = bip.PackageID
-    left join vClassicDeployments cd on smwis.InsString4 = cd.DeploymentId
-    where smsgs.MachineName like '%$DistributionPoint%'
-    and smsgs.MessageID in (6311,6314)
-    and DATEDIFF(hour,smsgs.Time,(DATEADD(hour, $UTCOffset, GETDATE()))) <= '$TimeInHours'
-    Order by smsgs.Time DESC
-    "
-
     # Run the query
-    $SQLQuery = [SQLQuery]::new($SQLServer, $Database, $Query)
-    $SQLQuery.DisplayResults = $False
     Try
     {
-        $SQLQuery.Execute()
+        $smsgs = Get-PXEStatusMessages -TimeInHours $TimeInHours -UTCOffset $UTCOffset -DistributionPoint $DistributionPoint -SqlConnection $SqlConnection
     }
     Catch
     {
@@ -261,7 +277,7 @@ Function Get-PXELog {
     }
 
     # If no results found...
-    If ($SQLQuery.Result.Rows.Count -lt 1)
+    If ($smsgs.Rows.Count -lt 1)
     {
         New-PopupMessage -Message "No results were found for this time period!" -Title "PXE Log" -ButtonType Ok -IconType Information
         Return
@@ -270,11 +286,11 @@ Function Get-PXELog {
     ## Convert date/time format and timezone (if selected) to local ##
 
     # Add a temporary column
-    $SQLQuery.Result.Columns.Add("TimeTemp")
+    $smsgs.Columns.Add("TimeTemp")
 
     If ($ConvertTimezone -eq "True")
     {
-        Foreach ($Row in $SQLQuery.Result.Rows)
+        Foreach ($Row in $smsgs.Rows)
         {
             # Populate the column using the local timezone and format
             $Row.TimeTemp = [System.TimeZone]::CurrentTimeZone.ToLocalTime($($Row.Time | Get-Date -Format (Get-Culture).DateTimeFormat.FullDateTimePattern))
@@ -282,7 +298,7 @@ Function Get-PXELog {
     }
     Else
     {
-        Foreach ($Row in $SQLQuery.Result.Rows)
+        Foreach ($Row in $smsgs.Rows)
         {
             # Populate the column using the local format
             $Row.TimeTemp = $Row.Time | Get-Date -Format (Get-Culture).DateTimeFormat.FullDateTimePattern
@@ -290,17 +306,17 @@ Function Get-PXELog {
     }
 
     # Put the new column at the beginning
-    $SQLQuery.Result.Columns['TimeTemp'].SetOrdinal(0)
+    $smsgs.Columns['TimeTemp'].SetOrdinal(0)
 
     # Remove the existing "Time" column
-    $SQLQuery.Result.Columns.Remove("Time")
+    $smsgs.Columns.Remove("Time")
 
     # Rename the new column to "Time"
-    $SQLQuery.Result.Columns['TimeTemp'].ColumnName = "Time"
+    $smsgs.Columns['TimeTemp'].ColumnName = "Time"
 
 
     # Add the query results to the session data and the UI
-    $UI.SessionData[3] = $SQLQuery.Result.DefaultView
+    $UI.SessionData[3] = $smsgs.DefaultView
 
 }
 
@@ -475,7 +491,7 @@ Function Get-Settings {
                 Param($UI)
                 Get-PXEPointsAndOffset
             }
-            $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage"))
+            $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage","Function:\Get-SqlUtcOffset","Function:\Get-PXEServicePoints"))
             $UI.Jobs += $Job
             $Job.Start()
         }

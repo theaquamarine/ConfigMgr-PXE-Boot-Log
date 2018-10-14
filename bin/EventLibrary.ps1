@@ -60,7 +60,7 @@ $UI.Retrieve.Add_Click({
         Param($UI)
         Get-PXELog
     }
-    $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXELog","Function:\New-PopupMessage"))
+    $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXELog","Function:\New-PopupMessage","Function:\Get-PXEStatusMessages"))
     $UI.Jobs += $Job
     $Job.Start()
 })
