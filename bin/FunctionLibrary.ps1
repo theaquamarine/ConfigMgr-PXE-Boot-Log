@@ -2,7 +2,7 @@
 function New-PopupMessage {
 # Return values for reference (https://msdn.microsoft.com/en-us/library/x83z1d9f(v=vs.84).aspx)
 
-# Decimal value    Description  
+# Decimal value    Description
 # -----------------------------
 # -1               The user did not click a button before nSecondsToWait seconds elapsed.
 # 1                OK button
@@ -83,7 +83,7 @@ Function Create-RegistryKeys
 
 
 # Function to update registry keys
-Function Update-Registry 
+Function Update-Registry
 {
     param($SQLServer, $Database, $UseLocalTimeZone)
 
@@ -94,7 +94,7 @@ Function Update-Registry
 
 
 # Function to read the registry keys
-Function Read-Registry 
+Function Read-Registry
 {
     $UI.SessionData[4] = Get-ItemProperty -Path $UI.SessionData[10] -Name SQLServer |  Select-Object -ExpandProperty SQLServer
     $UI.SessionData[5] = Get-ItemProperty -Path $UI.SessionData[10] -Name Database | Select-Object -ExpandProperty Database
@@ -107,10 +107,27 @@ Function Read-Registry
     }
 }
 
+Function Get-SqlUtcOffset {
+    # Returns a timespan rather than a string, but that seems better?
+    Param ([parameter(Mandatory=$true)]$SqlConnection)
 
+    $query = "SELECT SYSDATETIMEOFFSET() as 'UTCOffset'"
+
+    $sqlCommand = [System.Data.SqlClient.SqlCommand]::new($query, $SqlConnection)
+
+    try {
+        $SqlConnection.open();
+        $result = [System.Data.DataTable]::new()
+        $result.load($sqlCommand.ExecuteReader())
+        $result.UTCOffset.Offset
+    } finally {
+        $SqlConnection.close()
+    }
+}
 # Function to load the PXE Service Points
 Function Get-PXEServicePoints {
-    
+    Write-Host 'Get-PXEServicePoints'
+
     # Define the source directory
     $Source = $UI.SessionData[15]
 
@@ -120,13 +137,13 @@ Function Get-PXEServicePoints {
     #Set the SQL Server and database
     $SQLServer = $UI.SessionData[4]
     $Database = $UI.SessionData[5]
+    $connectionString = "Server=$SQLServer;Database=$Database;Integrated Security=SSPI;Connection Timeout=5"
 
-    # Get the UTC offset of the SQL server (if there is one). This is required so that we can correctly search using the selected time periods.
-    $Query = "SELECT LEFT(RIGHT(SYSDATETIMEOFFSET(),6),3) as 'UTCOffset'"
-    $SQLQuery = [SQLQuery]::new($SQLServer, $Database, $Query)
+    $SqlConnection = [System.Data.SqlClient.SqlConnection]::new($connectionString)
+
     Try
     {
-        [int]$UTCOffset = $SQLQuery.Execute() | Select -ExpandProperty UTCOffset
+        [int]$UTCOffset = (Get-SqlUtcOffset $SqlConnection).Hours
     }
     Catch
     {
@@ -140,9 +157,11 @@ Function Get-PXEServicePoints {
         $UTCOffset  = $UTCOffset - $UTCOffset - $UTCOffset
     }
 
+    New-PopupMessage -Message "UTC offset is $UTCOffset" -Title "Get UTC Offset of SQL Server" -ButtonType Ok -IconType Stop
     # Add the UTC Offset to the session data
     $UI.SessionData[16] = $UTCOffset
 
+    New-PopupMessage -Message "Getting PXE points..." -Title "Get PXE Service Points" -ButtonType Ok -IconType Stop
     # Get PXE Service Point list
     $Query = "Select ServerName from v_DistributionPoints where IsPxe = 1 Order By ServerName"
     $SQLQuery = [SQLQuery]::new($SQLServer, $Database, $Query)
@@ -168,7 +187,7 @@ Function Get-PXEServicePoints {
 
 # Function to load the PXE boot data from SCCM
 Function Get-PXELog {
-    
+
     # Define the source directory
     $Source = $UI.SessionData[15]
 
@@ -220,12 +239,12 @@ Function Get-PXELog {
     when 6311 then 'The PXE Service Point instructed the device to boot to bootimage ' + smwis.InsString3 + ' based on deployment ' + smwis.InsString4 + '.'
     when 6314 then 'The PXE Service Point instructed the device to boot normally as it has no PXE deployment assigned.'
     end as 'Message'
-    from v_StatusMessage smsgs   
+    from v_StatusMessage smsgs
     join v_StatMsgWithInsStrings smwis on smsgs.RecordID = smwis.RecordID
     join v_StatMsgModuleNames modNames on smsgs.ModuleName = modNames.ModuleName
     left join v_BootImagePackage bip on smwis.InsString3 = bip.PackageID
     left join vClassicDeployments cd on smwis.InsString4 = cd.DeploymentId
-    where smsgs.MachineName like '%$DistributionPoint%' 
+    where smsgs.MachineName like '%$DistributionPoint%'
     and smsgs.MessageID in (6311,6314)
     and DATEDIFF(hour,smsgs.Time,(DATEADD(hour, $UTCOffset, GETDATE()))) <= '$TimeInHours'
     Order by smsgs.Time DESC
@@ -252,7 +271,7 @@ Function Get-PXELog {
     }
 
     ## Convert date/time format and timezone (if selected) to local ##
-    
+
     # Add a temporary column
     $SQLQuery.Result.Columns.Add("TimeTemp")
 
@@ -328,9 +347,9 @@ Function Get-AssociatedDevices {
     # If results are returned
     If ($SQLQuery.Result.Rows.Count -ge 1)
     {
-        
+
         ## Convert date/time format and adjust for timezone if selected ##
-    
+
         # Add a temporary column
         $SQLQuery.Result.Columns.Add("CreationDateTemp")
 
@@ -359,7 +378,7 @@ Function Get-AssociatedDevices {
 
         # Rename the new column
         $SQLQuery.Result.Columns['CreationDateTemp'].ColumnName = 'Record Creation Date'
-        
+
          # Add a temporary column
         $SQLQuery.Result.Columns.Add("ActiveTimeTemp")
 
@@ -392,16 +411,16 @@ Function Get-AssociatedDevices {
         # Remove the existing column
         $SQLQuery.Result.Columns.Remove('Last Active Time')
 
-        # Rename the new column 
+        # Rename the new column
         $SQLQuery.Result.Columns['ActiveTimeTemp'].ColumnName = 'Last Active Time'
-        
-        
-        
+
+
+
         # Add the results to the session data and UI
         $UI.SessionData[8] = $SQLQuery.Result.DefaultView
 
         # Create and load the associated records window
-        [XML]$Xaml2 = [System.IO.File]::ReadAllLines("$Source\XAML files\Devices.xaml") 
+        [XML]$Xaml2 = [System.IO.File]::ReadAllLines("$Source\XAML files\Devices.xaml")
         $UI.DevicesWindow = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml2))
         $UI.DevicesWindow.Icon = "$Source\bin\network.ico"
         $UI.DevicesWindow.DataContext = $UI.SessionData
@@ -421,7 +440,7 @@ Function Get-AssociatedDevices {
 Function Get-Settings {
 
     # Create the Settings window
-    [XML]$Xaml3 = [System.IO.File]::ReadAllLines("$Source\XAML files\Settings.xaml") 
+    [XML]$Xaml3 = [System.IO.File]::ReadAllLines("$Source\XAML files\Settings.xaml")
     $UI.SettingsWindow = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml3))
     $xaml3.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | ForEach-Object -Process {
     $UI.$($_.Name) = $UI.SettingsWindow.FindName($_.Name)
@@ -478,7 +497,7 @@ Function Get-Settings {
 Function Display-About {
 
     # Create the Display window
-    [XML]$Xaml4 = [System.IO.File]::ReadAllLines("$Source\XAML files\About.xaml") 
+    [XML]$Xaml4 = [System.IO.File]::ReadAllLines("$Source\XAML files\About.xaml")
     $UI.AboutWindow = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml4))
     $xaml4.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | ForEach-Object -Process {
         $UI.$($_.Name) = $UI.AboutWindow.FindName($_.Name)
@@ -503,7 +522,7 @@ Function Display-About {
 Function Display-Help {
 
     # Create the Help window
-    [XML]$Xaml5 = [System.IO.File]::ReadAllLines("$Source\XAML files\Help.xaml") 
+    [XML]$Xaml5 = [System.IO.File]::ReadAllLines("$Source\XAML files\Help.xaml")
     $UI.HelpWindow = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml5))
     $xaml5.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | ForEach-Object -Process {
         $UI.$($_.Name) = $UI.HelpWindow.FindName($_.Name)
@@ -571,12 +590,12 @@ Function Check-CurrentVersion {
 
     # Add a row for each version
     $XMLDocument.PXE_Boot_Log.Versions.Version | sort Value -Descending | foreach {
-    
+
         # The changes are put into an array, then converted to a string with each change on a new line for correct display
         [array]$Changes = $_.Changes.Change
         $ofs = "`r`n"
         $Table.Rows.Add($_.Value, $_.ReleaseDate, [string]$Changes)
-    
+
     }
 
     # Set the source of the datagrid
@@ -601,24 +620,24 @@ Function Check-CurrentVersion {
 
 
 # Function to display a notification tip
-function Show-BalloonTip  
+function Show-BalloonTip
 {
- 
+
   [CmdletBinding(SupportsShouldProcess = $true)]
   param
   (
     [Parameter(Mandatory=$true)]
     $Text,
-   
+
     [Parameter(Mandatory=$true)]
     $Title,
-   
+
     [ValidateSet('None', 'Info', 'Warning', 'Error')]
     $Icon = 'Info',
     $Timeout = 30000,
     $UI
   )
- 
+
   Add-Type -AssemblyName System.Windows.Forms
 
   $Form = New-Object System.Windows.Forms.Form
@@ -653,4 +672,4 @@ function Show-BalloonTip
   #$App = [System.Windows.Application]::new()
   #$app.Run($Form)
 
-} 
+}

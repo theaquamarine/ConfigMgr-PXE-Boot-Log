@@ -1,6 +1,6 @@
 ﻿# Event: Window loaded
 $UI.Window.Add_Loaded({
-    
+
     # Activate the window
     $This.Activate()
 
@@ -18,7 +18,7 @@ $UI.Window.Add_Loaded({
             Param($UI)
             Get-PXEServicePoints
         }
-        $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEServicePoints","Function:\New-PopupMessage"))
+        $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEServicePoints","Function:\New-PopupMessage","Function:\Get-SqlUtcOffset"))
         $UI.Jobs += $Job
         $Job.Start()
 
@@ -36,7 +36,7 @@ $UI.Window.Add_Loaded({
 
 # Event: Click the Retrieve Log button
 $UI.Retrieve.Add_Click({
-   
+
     # Check that a DP and time period are selected
     If ($UI.PXE.SelectedItem -eq $null)
     {
@@ -52,9 +52,9 @@ $UI.Retrieve.Add_Click({
 
     # Add the selections to the session data
     $UI.SessionData[6] = $UI.PXE.SelectedItem
-    $UI.SessionData[7] = $UI.TimePeriod.SelectedItem  
+    $UI.SessionData[7] = $UI.TimePeriod.SelectedItem
     $UI.SessionData[3] = $null
-   
+
     # Get the PXE log data in a background process
     $Code = {
         Param($UI)
@@ -62,23 +62,23 @@ $UI.Retrieve.Add_Click({
     }
     $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXELog","Function:\New-PopupMessage"))
     $UI.Jobs += $Job
-    $Job.Start() 
+    $Job.Start()
 })
 
 
 # Event: Double-click the datagrid
 $UI.DataGrid.Add_MouseDoubleClick({
-    
+
     # Add the SMBIOS GUID to the session data
     $UI.SessionData[9] = $ui.DataGrid.SelectedItem.'SMBIOS GUID'
-    
+
     # Get the list of associated records in SCCM
     Get-AssociatedDevices
 })
 
 # Event: Click the exit button
 $UI.Btn_Exit.Add_Click({
-    
+
     # Close the window
     $UI.Window.Close()
 
@@ -86,7 +86,7 @@ $UI.Btn_Exit.Add_Click({
 
 # Event: Click the Settings button
 $UI.Btn_Settings.Add_Click({
-    
+
     # Show the Settings window
     Get-Settings
 
@@ -94,7 +94,7 @@ $UI.Btn_Settings.Add_Click({
 
 # Event: Click the About button
 $UI.Btn_About.Add_Click({
-    
+
     # Show the About window
     Display-About
 
@@ -102,7 +102,7 @@ $UI.Btn_About.Add_Click({
 
 # Event: Click the Help button
 $UI.Btn_Help.Add_Click({
-    
+
     # Show the Help window
     Display-Help
 
