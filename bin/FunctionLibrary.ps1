@@ -120,12 +120,25 @@ Function Get-SqlUtcOffset {
         $result = [System.Data.DataTable]::new()
         $result.load($sqlCommand.ExecuteReader())
         $result.UTCOffset.Offset
-    } finally {
-        $SqlConnection.close()
-    }
+    } finally {$SqlConnection.close()}
 }
 # Get-SqlUtcOffset
 
+Function Get-PXEServicePoints {
+    Param ([parameter(Mandatory=$true)]$SqlConnection)
+
+    $query = "Select ServerName from v_DistributionPoints where IsPxe = 1 Order By ServerName"
+
+    $sqlCommand = [System.Data.SqlClient.SqlCommand]::new($query, $SqlConnection)
+
+    try {
+        $SqlConnection.open();
+        $result = [System.Data.DataTable]::new()
+        $result.load($sqlCommand.ExecuteReader())
+        $result
+    } finally {$SqlConnection.close()}
+}
+# Get-PXEServicePoints
 
 # Function to load the PXE Service Points
 Function Get-PXEPointsAndOffset {
@@ -162,14 +175,10 @@ Function Get-PXEPointsAndOffset {
     # Add the UTC Offset to the session data
     $UI.SessionData[16] = $UTCOffset
 
-    New-PopupMessage -Message "Getting PXE points..." -Title "Get PXE Service Points" -ButtonType Ok -IconType Stop
     # Get PXE Service Point list
-    $Query = "Select ServerName from v_DistributionPoints where IsPxe = 1 Order By ServerName"
-    $SQLQuery = [SQLQuery]::new($SQLServer, $Database, $Query)
-    $SQLQuery.DisplayResults = $False
     Try
     {
-        $SQLQuery.Execute()
+        $PXEPoints = Get-PXEServicePoints $SqlConnection
     }
     Catch
     {
@@ -178,7 +187,7 @@ Function Get-PXEPointsAndOffset {
     }
 
     # Add the Service point list to the session data and UI
-    $UI.SessionData[0] = [array]($SQLQuery.Result | Select -ExpandProperty ServerName)
+    $UI.SessionData[0] = [array]($PXEPoints | Select -ExpandProperty ServerName)
 
     # Enable the "retrieve log" button
     $UI.SessionData[11] = "True"
