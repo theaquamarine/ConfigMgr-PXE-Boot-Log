@@ -169,7 +169,7 @@ Function Get-PXEPointsAndOffset {
     }
 
     # Add the Service point list to the session data and UI
-    $UI.SessionData[0] = [array]($PXEPoints | Select -ExpandProperty ServerName)
+    $UI.SessionData[0] = [array]($PXEPoints | Select -ExpandProperty ServerName) + 'All Service Points'
 
     # Enable the "retrieve log" button
     $UI.SessionData[11] = "True"
@@ -246,6 +246,8 @@ Function Get-PXELog {
     If ($DistributionPoint -match '.')
     {
         $DistributionPoint = $DistributionPoint.Split('.')[0]
+    } elseif ($DistributionPoint -eq 'All Service Points') {
+        $DistributionPoint = ''
     }
 
     # Set the time period in hours based on the UI selection
