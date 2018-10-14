@@ -150,17 +150,11 @@ Function Get-PXEPointsAndOffset {
 
     $SqlConnection = [System.Data.SqlClient.SqlConnection]::new($connectionString)
 
-    Try {$UTCOffset = (Get-SqlUtcOffset $SqlConnection).Hours}
+    Try {$UTCOffset = Get-SqlUtcOffset $SqlConnection}
     Catch
     {
         New-PopupMessage -Message "Could not run SQL query!`n`n$($Error[1].Exception.Message)" -Title "Get UTC Offset of SQL Server" -ButtonType Ok -IconType Stop
         Return
-    }
-
-    # Convert UTCOffset value (ie positive to negative and vice versa) for correct calculation with the DATEADD() function
-    If ($UTCOffset -ne 0)
-    {
-        $UTCOffset  = $UTCOffset - $UTCOffset - $UTCOffset
     }
 
     # Add the UTC Offset to the session data
@@ -183,9 +177,8 @@ Function Get-PXEPointsAndOffset {
 
 Function Get-PXEStatusMessages {
     Param (
-        $TimeInHours = 1,
+        $Deadline,
         $DistributionPoint = [DBNull]::Value,
-        $UTCOffSet = 0,
         [parameter(Mandatory=$true)]$SqlConnection
     )
 
@@ -213,14 +206,13 @@ Function Get-PXEStatusMessages {
         left join vClassicDeployments cd on smwis.InsString4 = cd.DeploymentId
         where (smsgs.MachineName like '%' + @DistributionPoint + '%' or @DistributionPoint IS NULL)
         and smsgs.MessageID in (6311,6314)
-        and (DATEDIFF(hour,smsgs.Time,(DATEADD(hour, @UTCOffset, GETDATE()))) <= @TimeInHours)
+        and smsgs.Time >= @Deadline
         Order by smsgs.Time DESC
         "
 
     $sqlCommand = [System.Data.SqlClient.SqlCommand]::new($query, $SqlConnection)
 
-    $sqlCommand.Parameters.AddWithValue('@UTCOffset', $UTCOffset) | Out-Null
-    $sqlCommand.Parameters.AddWithValue('@TimeInHours', $TimeInHours) | Out-Null
+    $sqlCommand.Parameters.AddWithValue('@Deadline', $Deadline) | Out-Null
     $sqlCommand.Parameters.AddWithValue('@DistributionPoint', $DistributionPoint) | Out-Null
 
     try {
@@ -267,10 +259,13 @@ Function Get-PXELog {
         "Last 4 weeks" {$TimeInHours = 672}
     }
 
+    # Calculate the maximum age of messages we want to see
+    $deadline = (Get-Date).Subtract($UTCOffset).AddHours($TimeInHours*-1)
+
     # Run the query
     Try
     {
-        $smsgs = Get-PXEStatusMessages -TimeInHours $TimeInHours -UTCOffset $UTCOffset -DistributionPoint $DistributionPoint -SqlConnection $SqlConnection
+        $smsgs = Get-PXEStatusMessages -Deadline $deadline -DistributionPoint $DistributionPoint -SqlConnection $SqlConnection
     }
     Catch
     {
