@@ -124,10 +124,11 @@ Function Get-SqlUtcOffset {
         $SqlConnection.close()
     }
 }
-# Function to load the PXE Service Points
-Function Get-PXEServicePoints {
-    Write-Host 'Get-PXEServicePoints'
+# Get-SqlUtcOffset
 
+
+# Function to load the PXE Service Points
+Function Get-PXEPointsAndOffset {
     # Define the source directory
     $Source = $UI.SessionData[15]
 
@@ -476,9 +477,9 @@ Function Get-Settings {
         {
             $Code = {
                 Param($UI)
-                Get-PXEServicePoints
+                Get-PXEPointsAndOffset
             }
-            $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEServicePoints","Function:\New-PopupMessage"))
+            $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage"))
             $UI.Jobs += $Job
             $Job.Start()
         }
