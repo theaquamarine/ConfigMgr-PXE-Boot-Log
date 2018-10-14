@@ -184,15 +184,13 @@ Function Get-PXEPointsAndOffset {
 Function Get-PXEStatusMessages {
     Param (
         $TimeInHours = 1,
-        $DistributionPoint = '',
+        $DistributionPoint = [DBNull]::Value,
         $UTCOffSet = 0,
         [parameter(Mandatory=$true)]$SqlConnection
     )
 
     $Query = "
         select smsgs.Time,
-        --DATEDIFF(hour,smsgs.Time,(DATEADD(hour, $UTCOffset, GETDATE()))) as 'TimeInHours',
-        --$UTCOffset as 'Offset',
         smsgs.MachineName as 'PXE Service Point',
         case smsgs.MessageID
         when 6311 then 'PXE boot'
@@ -213,20 +211,24 @@ Function Get-PXEStatusMessages {
         join v_StatMsgModuleNames modNames on smsgs.ModuleName = modNames.ModuleName
         left join v_BootImagePackage bip on smwis.InsString3 = bip.PackageID
         left join vClassicDeployments cd on smwis.InsString4 = cd.DeploymentId
-        where smsgs.MachineName like '%$DistributionPoint%'
+        where (smsgs.MachineName like '%' + @DistributionPoint + '%' or @DistributionPoint IS NULL)
         and smsgs.MessageID in (6311,6314)
-        and DATEDIFF(hour,smsgs.Time,(DATEADD(hour, $UTCOffset, GETDATE()))) <= '$TimeInHours'
+        and (DATEDIFF(hour,smsgs.Time,(DATEADD(hour, @UTCOffset, GETDATE()))) <= @TimeInHours)
         Order by smsgs.Time DESC
         "
 
     $sqlCommand = [System.Data.SqlClient.SqlCommand]::new($query, $SqlConnection)
 
+    $sqlCommand.Parameters.AddWithValue('@UTCOffset', $UTCOffset) | Out-Null
+    $sqlCommand.Parameters.AddWithValue('@TimeInHours', $TimeInHours) | Out-Null
+    $sqlCommand.Parameters.AddWithValue('@DistributionPoint', $DistributionPoint) | Out-Null
+
     try {
         $SqlConnection.open();
         $result = [System.Data.DataTable]::new()
         $result.load($sqlCommand.ExecuteReader())
-        $result
-    } catch {New-PopupMessage -Message "$Error" -Title "SQL Query" -ButtonType Ok -IconType Stop
+        return @(,$result) #Powershell is weird about returning DataTables https://stackoverflow.com/questions/1918190/
+    # } catch {New-PopupMessage -Message "$Error" -Title "SQL Query" -ButtonType Ok -IconType Stop
     } finally {$SqlConnection.close()}
 }
 # Get-PXEStatusMessages
