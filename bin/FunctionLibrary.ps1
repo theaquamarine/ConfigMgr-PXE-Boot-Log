@@ -142,23 +142,15 @@ Function Get-PXEServicePoints {
 
 # Function to load the PXE Service Points
 Function Get-PXEPointsAndOffset {
-    # Define the source directory
-    $Source = $UI.SessionData[15]
-
-    # Load in the class library
-    . "$Source\bin\ClassLibrary.ps1"
-
     #Set the SQL Server and database
     $SQLServer = $UI.SessionData[4]
     $Database = $UI.SessionData[5]
+
     $connectionString = "Server=$SQLServer;Database=$Database;Integrated Security=SSPI;Connection Timeout=5"
 
     $SqlConnection = [System.Data.SqlClient.SqlConnection]::new($connectionString)
 
-    Try
-    {
-        [int]$UTCOffset = (Get-SqlUtcOffset $SqlConnection).Hours
-    }
+    Try {$UTCOffset = (Get-SqlUtcOffset $SqlConnection).Hours}
     Catch
     {
         New-PopupMessage -Message "Could not run SQL query!`n`n$($Error[1].Exception.Message)" -Title "Get UTC Offset of SQL Server" -ButtonType Ok -IconType Stop
@@ -171,15 +163,11 @@ Function Get-PXEPointsAndOffset {
         $UTCOffset  = $UTCOffset - $UTCOffset - $UTCOffset
     }
 
-    New-PopupMessage -Message "UTC offset is $UTCOffset" -Title "Get UTC Offset of SQL Server" -ButtonType Ok -IconType Stop
     # Add the UTC Offset to the session data
     $UI.SessionData[16] = $UTCOffset
 
     # Get PXE Service Point list
-    Try
-    {
-        $PXEPoints = Get-PXEServicePoints $SqlConnection
-    }
+    Try {$PXEPoints = Get-PXEServicePoints $SqlConnection}
     Catch
     {
         New-PopupMessage -Message "Could not run SQL query!`n`n$($Error[1].Exception.Message)" -Title "Get PXE Service Points" -ButtonType Ok -IconType Stop
@@ -191,7 +179,6 @@ Function Get-PXEPointsAndOffset {
 
     # Enable the "retrieve log" button
     $UI.SessionData[11] = "True"
-
 }
 
 
