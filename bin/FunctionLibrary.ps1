@@ -243,7 +243,7 @@ Function Get-PXELog {
 
 
     # Convert from FQDN to friendly name only (required for SQL query)
-    If ($DistributionPoint -match '.')
+    If ($DistributionPoint -match '\.')
     {
         $DistributionPoint = $DistributionPoint.Split('.')[0]
     } elseif ($DistributionPoint -eq 'All Service Points') {
