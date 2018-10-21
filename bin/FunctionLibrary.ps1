@@ -107,23 +107,6 @@ Function Read-Registry
     }
 }
 
-Function Get-SqlUtcOffset {
-    # Returns a timespan rather than a string, but that seems better?
-    Param ([parameter(Mandatory=$true)]$SqlConnection)
-
-    $query = "SELECT SYSDATETIMEOFFSET() as 'UTCOffset'"
-
-    $sqlCommand = [System.Data.SqlClient.SqlCommand]::new($query, $SqlConnection)
-
-    try {
-        $SqlConnection.open();
-        $result = [System.Data.DataTable]::new()
-        $result.load($sqlCommand.ExecuteReader())
-        $result.UTCOffset.Offset
-    } finally {$SqlConnection.close()}
-}
-# Get-SqlUtcOffset
-
 Function Get-PXEServicePoints {
     Param ([parameter(Mandatory=$true)]$SqlConnection)
 
@@ -149,16 +132,6 @@ Function Get-PXEPointsAndOffset {
     $connectionString = "Server=$SQLServer;Database=$Database;Integrated Security=SSPI;Connection Timeout=5"
 
     $SqlConnection = [System.Data.SqlClient.SqlConnection]::new($connectionString)
-
-    Try {$UTCOffset = Get-SqlUtcOffset $SqlConnection}
-    Catch
-    {
-        New-PopupMessage -Message "Could not run SQL query!`n`n$($Error[1].Exception.Message)" -Title "Get UTC Offset of SQL Server" -ButtonType Ok -IconType Stop
-        Return
-    }
-
-    # Add the UTC Offset to the session data
-    $UI.SessionData[16] = $UTCOffset
 
     # Get PXE Service Point list
     Try {$PXEPoints = Get-PXEServicePoints $SqlConnection}
@@ -234,7 +207,6 @@ Function Get-PXELog {
     $Database = $UI.SessionData[5]
     $DistributionPoint = $UI.SessionData[6]
     $TimePeriod = $UI.SessionData[7]
-    $UTCOffset = $UI.SessionData[16]
     $ConvertTimezone = $UI.SessionData[17]
 
     $connectionString = "Server=$SQLServer;Database=$Database;Integrated Security=SSPI;Connection Timeout=5"
@@ -262,7 +234,7 @@ Function Get-PXELog {
     }
 
     # Calculate the maximum age of messages we want to see
-    $deadline = (Get-Date).Subtract($UTCOffset).AddHours($TimeInHours*-1)
+    $deadline = (Get-Date).AddHours($TimeInHours*-1).ToUniversalTime()
 
     # Run the query
     Try
@@ -490,7 +462,7 @@ Function Get-Settings {
                 Param($UI)
                 Get-PXEPointsAndOffset
             }
-            $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage","Function:\Get-SqlUtcOffset","Function:\Get-PXEServicePoints"))
+            $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage","Function:\Get-PXEServicePoints"))
             $UI.Jobs += $Job
             $Job.Start()
         }

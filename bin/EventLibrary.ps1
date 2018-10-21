@@ -18,7 +18,7 @@ $UI.Window.Add_Loaded({
             Param($UI)
             Get-PXEPointsAndOffset
         }
-        $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage","Function:\Get-SqlUtcOffset","Function:\Get-PXEServicePoints"))
+        $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage","Function:\Get-PXEServicePoints"))
         $UI.Jobs += $Job
         $Job.Start()
 
