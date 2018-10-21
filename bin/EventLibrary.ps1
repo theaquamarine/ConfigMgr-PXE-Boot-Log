@@ -16,9 +16,9 @@ $UI.Window.Add_Loaded({
         # Get the PXE Service point list in a background job
         $Code = {
             Param($UI)
-            Get-PXEPointsAndOffset
+            Get-PXEPointsList
         }
-        $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage","Function:\Get-PXEServicePoints"))
+        $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsList","Function:\New-PopupMessage","Function:\Get-PXEServicePoints"))
         $UI.Jobs += $Job
         $Job.Start()
 

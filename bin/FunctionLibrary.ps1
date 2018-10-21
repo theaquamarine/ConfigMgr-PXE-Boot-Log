@@ -124,7 +124,7 @@ Function Get-PXEServicePoints {
 # Get-PXEServicePoints
 
 # Function to load the PXE Service Points
-Function Get-PXEPointsAndOffset {
+Function Get-PXEPointsList {
     #Set the SQL Server and database
     $SQLServer = $UI.SessionData[4]
     $Database = $UI.SessionData[5]
@@ -460,9 +460,9 @@ Function Get-Settings {
         {
             $Code = {
                 Param($UI)
-                Get-PXEPointsAndOffset
+                Get-PXEPointsList
             }
-            $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsAndOffset","Function:\New-PopupMessage","Function:\Get-PXEServicePoints"))
+            $Job = [BackgroundJob]::new($Code, @($UI), @("Function:\Get-PXEPointsList","Function:\New-PopupMessage","Function:\Get-PXEServicePoints"))
             $UI.Jobs += $Job
             $Job.Start()
         }
