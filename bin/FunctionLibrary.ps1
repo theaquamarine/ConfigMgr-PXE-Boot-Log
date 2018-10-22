@@ -254,37 +254,15 @@ Function Get-PXELog {
         Return
     }
 
-    ## Convert date/time format and timezone (if selected) to local ##
-
-    # Add a temporary column
-    $smsgs.Columns.Add("TimeTemp")
-
+    ## Convert timezone (if selected) to local ##
     If ($ConvertTimezone -eq "True")
     {
         Foreach ($Row in $smsgs.Rows)
         {
             # Populate the column using the local timezone and format
-            $Row.TimeTemp = [System.TimeZone]::CurrentTimeZone.ToLocalTime($($Row.Time | Get-Date -Format (Get-Culture).DateTimeFormat.FullDateTimePattern))
+            $Row.Time = [System.TimeZone]::CurrentTimeZone.ToLocalTime($($Row.Time | Get-Date -Format (Get-Culture).DateTimeFormat.FullDateTimePattern))
         }
     }
-    Else
-    {
-        Foreach ($Row in $smsgs.Rows)
-        {
-            # Populate the column using the local format
-            $Row.TimeTemp = $Row.Time | Get-Date -Format (Get-Culture).DateTimeFormat.FullDateTimePattern
-        }
-    }
-
-    # Put the new column at the beginning
-    $smsgs.Columns['TimeTemp'].SetOrdinal(0)
-
-    # Remove the existing "Time" column
-    $smsgs.Columns.Remove("Time")
-
-    # Rename the new column to "Time"
-    $smsgs.Columns['TimeTemp'].ColumnName = "Time"
-
 
     # Add the query results to the session data and the UI
     $UI.SessionData[3] = $smsgs.DefaultView

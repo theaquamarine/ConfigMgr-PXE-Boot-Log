@@ -71,6 +71,7 @@ If ($PSVersionTable.PSVersion.Major -lt 5)
 # Create a synchronized hash table and add the WPF window and its named elements to it
 $Global:UI = [System.Collections.Hashtable]::Synchronized(@{})
 $UI.Window = [Windows.Markup.XamlReader]::Load((New-Object -TypeName System.Xml.XmlNodeReader -ArgumentList $xaml))
+$UI.Window.Language = (Get-Culture).Name
 $xaml.SelectNodes("//*[@*[contains(translate(name(.),'n','N'),'Name')]]") | ForEach-Object -Process {
     $UI.$($_.Name) = $UI.Window.FindName($_.Name)
     }
